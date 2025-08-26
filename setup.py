@@ -8,7 +8,6 @@ setup(
     name="project-utils",
     version="0.1.0",
     packages=find_packages(),
-    package_dir={"": "."},
     install_requires=[
         "setuptools",
         "autopep8",
@@ -48,7 +47,7 @@ setup(
         "Programming Language :: Python :: 3.12",
     ],
     package_data={
-        "utils.config": ["*.json"],
+        "project_utils.utils.config": ["*.json"],
     },
     include_package_data=True,
 )

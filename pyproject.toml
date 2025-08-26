@@ -51,8 +51,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build]
 include = [
-    "utils/**/*.py",
-    "utils/**/*.json",
+    "project_utils/**/*.py",
+    "project_utils/**/*.json",
 ]
 
 [tool.ruff]
