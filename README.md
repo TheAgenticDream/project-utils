@@ -12,32 +12,47 @@ A comprehensive utility package providing database operations, AI integration, c
 
 ## Installation
 
-### From GitHub (Private Repository)
+### Using uv (Recommended)
 
 ```bash
-# Using pip
-pip install git+ssh://git@github.com/TheAgenticDream/project-utils.git
+# Add to pyproject.toml dependencies
+dependencies = [
+    "project-utils @ git+https://github.com/TheAgenticDream/project-utils.git@main",
+]
 
-# Using pip with specific version/tag
-pip install git+ssh://git@github.com/TheAgenticDream/project-utils.git@v0.1.0
+# Then sync with uv
+uv sync
+
+# Or for a specific version/tag
+dependencies = [
+    "project-utils @ git+https://github.com/TheAgenticDream/project-utils.git@v0.1.0",
+]
+```
+
+### Using pip (Alternative)
+
+```bash
+# Install from GitHub
+pip install git+https://github.com/TheAgenticDream/project-utils.git
+
+# Install specific version/tag
+pip install git+https://github.com/TheAgenticDream/project-utils.git@v0.1.0
 
 # In requirements.txt
-git+ssh://git@github.com/TheAgenticDream/project-utils.git@main
-
-# In pyproject.toml
-dependencies = [
-    "project-utils @ git+ssh://git@github.com/TheAgenticDream/project-utils.git@main",
-]
+git+https://github.com/TheAgenticDream/project-utils.git@main
 ```
 
 ### Development Installation
 
 ```bash
 # Clone the repository
-git clone git@github.com:TheAgenticDream/project-utils.git
+git clone https://github.com/TheAgenticDream/project-utils.git
 cd project-utils
 
-# Install in editable mode with dev dependencies
+# Using uv (recommended)
+uv sync --all-extras
+
+# Or using pip
 pip install -e ".[dev]"
 ```
 
@@ -207,26 +222,30 @@ project-utils/
 ### Running Tests
 
 ```bash
-# Run all tests
+# Using uv
+uv run pytest
+uv run pytest --cov=project_utils
+uv run pytest tests/test_database.py
+
+# Or using pytest directly (if in activated venv)
 pytest
-
-# Run with coverage
 pytest --cov=project_utils
-
-# Run specific test file
 pytest tests/test_database.py
 ```
 
 ### Code Formatting
 
 ```bash
-# Format with black
+# Using uv
+uv run black .
+uv run ruff check .
+uv run ruff format .
+uv run mypy .
+
+# Or with tools directly (if in activated venv)
 black .
-
-# Lint with flake8
-flake8 .
-
-# Type checking with mypy
+ruff check .
+ruff format .
 mypy .
 ```
 
