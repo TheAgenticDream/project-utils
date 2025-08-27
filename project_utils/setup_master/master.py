@@ -13,13 +13,11 @@ class Master:
     def __init__(
         self,
         working_dir: str = None,
-        config_file_directory: str = None,
-        config_file_name: str = None,
+        config_file: str = None,
         default_model: str = None,
     ):
         self.working_directory = working_dir
-        self.config_file_directory = config_file_directory
-        self.config_file_name = config_file_name
+        self.config_file = config_file
         self.default_model = default_model
         self.set_working_directory()
         logger.info("STARTING MASTER")
@@ -39,13 +37,17 @@ class Master:
         self.global_process_limit = 25
 
     def load_configuration(self):
-        """Always use environment-based configuration.
-
-        JSON file-based configuration is deprecated. This method initializes
-        the config from the environment and .env file via CF.
+        """Load configuration from environment and optional JSON config file.
+        
+        Uses environment variables as primary source, with optional JSON config
+        file for base64-encoded secrets.
         """
-        logger.info("Using environment-based configuration (JSON config is deprecated)")
-        self.CF = CF(kubernetes=False)
+        if self.config_file:
+            logger.info(f"Loading configuration with JSON config file: {self.config_file}")
+        else:
+            logger.info("Loading configuration from environment only")
+            
+        self.CF = CF(config_file=self.config_file, kubernetes=False)
 
     def set_security(self):
         try:
