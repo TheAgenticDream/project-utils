@@ -60,11 +60,19 @@ class Config:
         Non-secret configuration continues to come from .env files.
         This method only processes secrets from the JSON config.
         """
-        with open(config_file) as f:
-            config_data = json.load(f)
-            
-        # Load secrets from structured JSON config into environment variables
-        self._load_secrets_from_json_to_env(config_data)
+        try:
+            with open(config_file) as f:
+                config_data = json.load(f)
+                
+            # Load secrets from structured JSON config into environment variables
+            self._load_secrets_from_json_to_env(config_data)
+        except FileNotFoundError:
+            # Config file not found - this is expected in containerized environments
+            # where config is mounted at runtime or provided via environment variables
+            print(f"Info: Config file {config_file} not found, using environment variables only")
+        except Exception as e:
+            # Other errors should still be logged
+            print(f"Warning: Could not load config file {config_file}: {e}")
 
     def _load_secrets_from_json_to_env(self, config_data: dict):
         """Decode structured JSON config and set secrets as environment variables."""
@@ -103,7 +111,7 @@ class Config:
             # API Keys section
             ("api_keys", "openai"): "OPENAI_API_KEY",
             ("api_keys", "openrouter"): "OPENROUTER_API_KEY",
-            ("api_keys", "orchestration"): "ORCHESTRATION_API_KEY",
+            ("api_keys", "orchestration"): "ORCHESTRATION_INTEGRATION_API_KEY",
             
             # Database credentials section
             ("database_credentials", "password"): "DB_PASSWORD",
