@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 from pathlib import Path
@@ -54,9 +55,61 @@ class Config:
         raise FileNotFoundError("Could not find project root (no justfile found)")
 
     def _load_config_file(self, config_file: str):
-        """Load configuration from a specific file."""
+        """Load secrets from JSON config file (structured encoded format).
+        
+        Non-secret configuration continues to come from .env files.
+        This method only processes secrets from the JSON config.
+        """
         with open(config_file) as f:
-            self.data = json.load(f)
+            config_data = json.load(f)
+            
+        # Load secrets from structured JSON config into environment variables
+        self._load_secrets_from_json_to_env(config_data)
+
+    def _load_secrets_from_json_to_env(self, config_data: dict):
+        """Decode structured JSON config and set secrets as environment variables."""
+        try:
+            # Process each section that has encoded secrets
+            for section_name, section_data in config_data.items():
+                if isinstance(section_data, dict) and section_data.get("encoded", False):
+                    # Decode each field in this section
+                    for key, encoded_value in section_data.items():
+                        if key == "encoded":
+                            continue
+                        
+                        try:
+                            # Decode base64 value
+                            decoded_value = base64.b64decode(encoded_value).decode().strip()
+                            
+                            # Map to environment variable names
+                            env_var_name = self._map_json_key_to_env_var(section_name, key)
+                            if env_var_name:
+                                os.environ[env_var_name] = decoded_value
+                                
+                        except Exception as e:
+                            print(f"Warning: Could not decode {section_name}.{key}: {e}")
+                            
+        except Exception as e:
+            raise ValueError(f"Failed to load secrets from JSON config: {e}")
+
+    def _map_json_key_to_env_var(self, section: str, key: str) -> str:
+        """Map JSON config keys to environment variable names."""
+        mapping = {
+            # Secrets section
+            ("secrets", "fernet_key"): "FERNET_KEY",
+            ("secrets", "salt_key"): "SALT_KEY", 
+            ("secrets", "session_secret"): "WEBSITE_SESSION_SECRET",
+            
+            # API Keys section
+            ("api_keys", "openai"): "OPENAI_API_KEY",
+            ("api_keys", "openrouter"): "OPENROUTER_API_KEY",
+            ("api_keys", "orchestration"): "ORCHESTRATION_API_KEY",
+            
+            # Database credentials section
+            ("database_credentials", "password"): "DB_PASSWORD",
+        }
+        
+        return mapping.get((section, key))
 
     # Database configuration - environment only
     @property
