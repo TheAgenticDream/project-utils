@@ -2,7 +2,6 @@ import json
 import os
 import subprocess
 import pathlib
-import utils
 
 class CreateConfigClass(object):
     def __init__(self, package_dir: str, config_file_name: str):
