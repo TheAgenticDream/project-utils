@@ -7,17 +7,23 @@ import sys
 from loguru import logger
 
 
-def setup_loguru_logging(service_name: str = "API", level: str = "INFO"):
+def setup_loguru_logging(service_name: str = "API", level: str = None):
     """
     Configure loguru with consistent formatting across all services.
-    
+
     Args:
         service_name: Name of the service (e.g., "Orchestration", "WebsiteAPI", "GraphService")
-        level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL). If None, uses LOG_LEVEL env var.
     """
+    import os
+
+    # Use environment variable if level not provided
+    if level is None:
+        level = os.environ.get("LOG_LEVEL", "INFO")
+
     # Remove default handler
     logger.remove()
-    
+
     # Add colored, formatted handler for console output
     logger.add(
         sys.stdout,
@@ -30,7 +36,7 @@ def setup_loguru_logging(service_name: str = "API", level: str = "INFO"):
         backtrace=True,
         diagnose=True,
     )
-    
+
     return logger
 
 
