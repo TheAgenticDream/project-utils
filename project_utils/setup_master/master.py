@@ -99,6 +99,9 @@ class Master:
             openrouter_key = self.CF.return_config_ai_keys(ai_keys_OpenRouter_Key=True)
             ollama_key = self.CF.return_config_ai_keys(ai_keys_Ollama_Key=True)
             openai_key = self.CF.return_config_ai_keys(ai_keys_OpenAi_key=True)
+            bedrock_aws_access_key = self.CF.return_config_ai_keys(ai_keys_Bedrock_Aws_Access_Key=True)
+            bedrock_aws_secret_key = self.CF.return_config_ai_keys(ai_keys_Bedrock_Aws_Secret_Key=True)
+            bedrock_aws_region = self.CF.return_config_ai_keys(ai_keys_Bedrock_Aws_Region=True)
 
             # Use default model if provided, otherwise None (will be set later when needed)
             ai_model = self.default_model
@@ -107,6 +110,9 @@ class Master:
                 open_router_key=openrouter_key,
                 ollama_key=ollama_key,
                 open_ai_key=openai_key,
+                bedrock_aws_access_key=bedrock_aws_access_key,
+                bedrock_aws_secret_key=bedrock_aws_secret_key,
+                bedrock_aws_region=bedrock_aws_region,
                 ai_model=ai_model,
             )
 
@@ -158,6 +164,9 @@ class Master:
             ],
             "japan_local": [
                 model.model_id for model in Models if model.provider == "japan_local"
+            ],
+            "bedrock": [
+                model.model_id for model in Models if model.provider == "bedrock"
             ],
         }
 

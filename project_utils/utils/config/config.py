@@ -187,6 +187,18 @@ class Config:
     def ollama_key(self) -> str:
         return os.getenv("OLLAMA_KEY", "")
 
+    @property
+    def bedrock_aws_access_key(self) -> str:
+        return os.getenv("BEDROCK_AWS_ACCESS_KEY", "")
+
+    @property
+    def bedrock_aws_secret_key(self) -> str:
+        return os.getenv("BEDROCK_AWS_SECRET_KEY", "")
+
+    @property
+    def bedrock_aws_region(self) -> str:
+        return os.getenv("BEDROCK_AWS_REGION", "us-east-1")
+
     # Orchestration configuration - environment only
     @property
     def orchestration_host(self) -> str:
@@ -286,6 +298,12 @@ class Config:
             return self.openrouter_key
         if kwargs.get("ai_keys_Ollama_Key"):
             return self.ollama_key
+        if kwargs.get("ai_keys_Bedrock_Aws_Access_Key"):
+            return self.bedrock_aws_access_key
+        if kwargs.get("ai_keys_Bedrock_Aws_Secret_Key"):
+            return self.bedrock_aws_secret_key
+        if kwargs.get("ai_keys_Bedrock_Aws_Region"):
+            return self.bedrock_aws_region
         return {}  # Return empty dict for compatibility
 
     def return_config_orchestration_engine(self, **kwargs) -> Any:

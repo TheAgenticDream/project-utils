@@ -29,6 +29,7 @@ dependencies = [
     "openai>=1.0.0",
     "loguru>=0.6.0",
     "ollama",
+    "boto3>=1.26.0",
 ]
 
 [project.urls]
