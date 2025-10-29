@@ -182,13 +182,20 @@ class DBFunctions:
             json_str = json.dumps(sanitized_data)
             return f"'{json_str}'"
         elif isinstance(value, datetime):
-            return f"'{value.isoformat()}'"
+            # Escape colons to prevent SQLAlchemy from interpreting time portions like :13 as parameters
+            iso_string = value.isoformat().replace(":", "\\:")
+            return f"'{iso_string}'"
         elif isinstance(value, str):
-            # Standard string handling
-            sanitized_str = str(value).replace("'", "''")  # Escape single quotes
+            # Standard string handling - escape single quotes and : characters
+            # Note: % escaping removed - SQL prepared statements handle this automatically
+            sanitized_str = (
+                str(value).replace("'", "''").replace(":", "\\:")
+            )  # Escape single quotes and : for SQLAlchemy
             return f"'{sanitized_str}'"
         else:
-            sanitized_str = str(value).replace("'", "''")  # Escape single quotes
+            sanitized_str = (
+                str(value).replace("'", "''").replace(":", "\\:")
+            )  # Escape single quotes and : for SQLAlchemy
             return f"'{sanitized_str}'"
 
 

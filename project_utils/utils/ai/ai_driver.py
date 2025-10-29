@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import boto3
 from collections.abc import Callable
 from typing import Any
 
@@ -25,6 +26,9 @@ class AIDriver:
         open_router_key: str,
         open_ai_key: str,
         ollama_key: str,
+        bedrock_aws_access_key: str,
+        bedrock_aws_secret_key: str,
+        bedrock_aws_region: str,
         ai_model: str = None,
         agent_prompt: str = None,
         parser: BaseModel = None,
@@ -34,6 +38,9 @@ class AIDriver:
         self.open_ai_key = open_ai_key
         self.open_router_key = open_router_key
         self.ollama_key = ollama_key
+        self.bedrock_aws_access_key = bedrock_aws_access_key
+        self.bedrock_aws_secret_key = bedrock_aws_secret_key
+        self.bedrock_aws_region = bedrock_aws_region
         self.agent_prompt = agent_prompt or ""
         self.model = ai_model
         self.parser = parser
@@ -984,6 +991,158 @@ class AIDriver:
         )
 
     """
+        -----------------------------BEDROCK
+    """
+
+    def bedrock_chat(self, prompt: str) -> tuple[str, dict] | str:
+        """Send a chat request to AWS Bedrock API."""
+        check_initial_result = self.check_initial(
+            prompt=prompt, client_provider=ClientProvider.BEDROCK.value
+        )
+        if check_initial_result is not True:
+            return check_initial_result
+
+        self.set_client(client_provider=ClientProvider.BEDROCK)
+
+        def perform_bedrock_chat_operation():
+            self._log_prompt(prompt, "Bedrock")
+
+            self.agent_prompt = str(self.agent_prompt)
+            prompt_str = str(prompt)
+
+            body = json.dumps({
+                "anthropic_version": "bedrock-2023-05-31",
+                # using max token for Haiku 4.5 and Sonnet 4.5
+                "max_tokens": 64000,
+                "system": self.agent_prompt,
+                "messages": [{"role": "user", "content": prompt_str}]
+            })
+
+            try:
+                start_time = time.time()
+                response = self.client.invoke_model(
+                    body=body,
+                    modelId=self.model,
+                    accept="application/json",
+                    contentType="application/json",
+                )
+                elapsed = time.time() - start_time
+                logger.info(
+                    "Bedrock request with model {} completed in {:.2f}s",
+                    self.model,
+                    elapsed,
+                )
+
+                self._log_response_received(response, "Bedrock")
+
+                response_body = json.loads(response.get("body").read())
+
+                if response_body.get("content"):
+                    content = response_body["content"][0]["text"]
+                    usage = response_body.get("usage", {})
+                    content_length = len(content) if content else 0
+                    logger.success(
+                        "Response from model {} retrieved successfully (length: {})",
+                        self.model,
+                        content_length,
+                    )
+                    return content, usage
+                else:
+                    logger.warning("No content in Bedrock response for model {}", self.model)
+                    return "No response from the API."
+
+            except Exception as e:
+                elapsed = time.time() - start_time if "start_time" in locals() else -1
+                logger.error(
+                    "Bedrock request with model {} failed after {:.2f}s: {}",
+                    self.model,
+                    elapsed,
+                    str(e),
+                )
+                raise
+
+        return self.execute_with_error_handling(
+            operation_func=perform_bedrock_chat_operation,
+            client_provider=ClientProvider.BEDROCK.value,
+        )
+
+    def bedrock_parser(self, prompt: str) -> tuple[Any, dict] | str:
+        """Parse structured data using AWS Bedrock API with tool use."""
+        check_initial_result = self.check_initial(
+            prompt=prompt, client_provider=ClientProvider.BEDROCK.value
+        )
+        if check_initial_result is not True:
+            return check_initial_result
+
+        if not self.parser:
+            logger.error("Parser not configured for Bedrock parsing.")
+            return False
+
+        self.set_client(client_provider=ClientProvider.BEDROCK)
+
+        def perform_bedrock_parse_operation():
+            self._log_prompt(prompt, "Bedrock Parser")
+
+            tool_schema = self.parser.model_json_schema()
+            tools = [{
+                "name": self.parser.__name__,
+                "description": self.parser.__doc__ or f"Schema for {self.parser.__name__}",
+                "input_schema": tool_schema
+            }]
+
+            body = json.dumps({
+                "anthropic_version": "bedrock-2023-05-31",
+                # using max token for Haiku 4.5 and Sonnet 4.5
+                "max_tokens": 64000,
+                "system": self.agent_prompt,
+                "messages": [{"role": "user", "content": prompt}],
+                "tool_choice": {"type": "tool", "name": self.parser.__name__},
+                "tools": tools
+            })
+
+            try:
+                start_time = time.time()
+                response = self.client.invoke_model(
+                    body=body,
+                    modelId=self.model,
+                    accept="application/json",
+                    contentType="application/json",
+                )
+                elapsed = time.time() - start_time
+                logger.info(
+                    "Bedrock parse request with model {} completed in {:.2f}s",
+                    self.model,
+                    elapsed,
+                )
+
+                response_body = json.loads(response.get("body").read())
+                
+                if response_body.get("content"):
+                    tool_use_block = next((block for block in response_body["content"] if block.get("type") == "tool_use"), None)
+                    if tool_use_block:
+                        parsed_content = tool_use_block["input"]
+                        result = self.parser(**parsed_content)
+                        usage = response_body.get("usage", {})
+                        logger.success("Bedrock parsing successful for model {}", self.model)
+                        return result, usage
+
+                logger.warning("No valid tool use block in Bedrock response for model {}", self.model)
+                return "No valid tool use block in response."
+
+            except Exception as e:
+                logger.error(
+                    "Bedrock parse with model {} failed: {}",
+                    self.model,
+                    str(e),
+                )
+                raise
+
+        return self.execute_with_error_handling(
+            operation_func=perform_bedrock_parse_operation,
+            client_provider=ClientProvider.BEDROCK.value,
+        )
+
+    """
         -----------------------------NON LLM
     """
 
@@ -1144,6 +1303,12 @@ class AIDriver:
             ),
             ClientProvider.JAPAN_LOCAL: lambda: OpenAI(
                 api_key="dummy", base_url=japan_local_base_url
+            ),
+            ClientProvider.BEDROCK: lambda: boto3.client(
+                "bedrock-runtime",
+                aws_access_key_id=self.bedrock_aws_access_key,
+                aws_secret_access_key=self.bedrock_aws_secret_key,
+                region_name=self.bedrock_aws_region,
             ),
         }
 

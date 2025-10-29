@@ -53,6 +53,10 @@ class Models(Enum):
     LLAMA3_2_VISION_LATEST = ("llama3.2-vision:latest", "ollama")
     MINICPM_V_LATEST = ("minicpm-v:latest", "ollama")
 
+    # Bedrock Models
+    HAIKU4_5_BEDROCK = ("us.anthropic.claude-haiku-4-5-20251001-v1:0", "bedrock")
+    SONNET4_5_BEDROCK = ("us.anthropic.claude-sonnet-4-5-20250929-v1:0", "bedrock")
+
     def __init__(self, model_id, provider):
         self._model_id = model_id
         self.provider = provider
@@ -94,6 +98,7 @@ class ClientProvider(Enum):
     OLLAMA = "ollama"
     OLLAMA_LOCAL = "ollama_local"
     JAPAN_LOCAL = "japan_local"
+    BEDROCK = "bedrock"
 
 
 class ClientProviderEndpoints(Enum):
