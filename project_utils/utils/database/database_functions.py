@@ -186,15 +186,16 @@ class DBFunctions:
             iso_string = value.isoformat().replace(":", "\\:")
             return f"'{iso_string}'"
         elif isinstance(value, str):
-            # Standard string handling - escape single quotes, %, and : characters to prevent SQLAlchemy parameter binding
+            # Standard string handling - escape single quotes and : characters
+            # Note: % escaping removed - SQL prepared statements handle this automatically
             sanitized_str = (
-                str(value).replace("'", "''").replace("%", "%%").replace(":", "\\:")
-            )  # Escape single quotes, %, and : for SQLAlchemy
+                str(value).replace("'", "''").replace(":", "\\:")
+            )  # Escape single quotes and : for SQLAlchemy
             return f"'{sanitized_str}'"
         else:
             sanitized_str = (
-                str(value).replace("'", "''").replace("%", "%%").replace(":", "\\:")
-            )  # Escape single quotes, %, and : for SQLAlchemy
+                str(value).replace("'", "''").replace(":", "\\:")
+            )  # Escape single quotes and : for SQLAlchemy
             return f"'{sanitized_str}'"
 
 
